@@ -12,20 +12,21 @@ self.onmessage = async (event) => {
 
         // 1. כתיבת קובץ ה-ZIP של הסטודנט למערכת הקבצים הווירטואלית
         pyodide.FS.writeFile("submission.zip", new Uint8Array(zipBuffer));
-        
+
         // 2. משיכת קבצי הקינפוג והבודק שלך מהשרת/התיקייה
         const configText = await (await fetch('config.json')).text();
         pyodide.FS.writeFile("config.json", configText);
 
-        const graderText = await (await fetch('grader3.py')).text();
-        pyodide.FS.writeFile("grader3.py", graderText);
+        // כאן משנים ל-grader.py
+        const graderText = await (await fetch('grader.py')).text();
+        pyodide.FS.writeFile("grader.py", graderText);
 
-        // 3. הרצת פייתון ישירות (עוקף את ה-input הסטנדרטי ב-main)
+        // 3. הרצת פייתון ישירות (וכאן קוראים ל-grader במקום grader3)
         await pyodide.runPythonAsync(`
-            import grader3
+            import grader
             try:
-                config_db = grader3.load_config()
-                grader3.process_submission("${exerciseId}", "submission.zip", config_db)
+                config_db = grader.load_config()
+                grader.process_submission("${exerciseId}", "submission.zip", config_db)
             except Exception as e:
                 print(f"[!] System Error: {e}")
         `);
