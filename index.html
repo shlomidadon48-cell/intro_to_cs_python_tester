@@ -45,7 +45,7 @@
             // אם קיימת בדיקה רצה, נעצור אותה
             if (worker) worker.terminate();
 
-            worker = new Worker('worker.js');
+            worker = new Worker('worker.js?v=2');
 
             // מנגנון ה-Timeout החדש של הדפדפן (מחליף את ה-subprocess)
             const timeoutId = setTimeout(() => {
