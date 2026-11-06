@@ -62,7 +62,7 @@
             };
 
             // שליחת הנתונים ל-Worker שרץ ברקע
-            worker.postMessage({ zipBuffer: buffer, exerciseId: exerciseId });
+            worker.postMessage({ zipBuffer: buffer, exerciseId: exerciseId, fileName: file.name });
         });
     </script>
 </body>
