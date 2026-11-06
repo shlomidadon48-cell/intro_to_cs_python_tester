@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>בודק מטלות אוטומטי</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        #output { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; direction: ltr; text-align: left; overflow-x: auto; min-height: 200px; }
+        .controls { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+        button, select, input { padding: 8px 12px; }
+    </style>
+</head>
+<body>
+    <h1>בודק מטלות - Intro2CS</h1>
+    <div class="controls">
+        <select id="exerciseSelect">
+            <option value="ex1">תרגיל 1</option>
+            <option value="ex2" selected>תרגיל 2</option>
+            <option value="ex3">תרגיל 3</option>
+            <option value="ex4">תרגיל 4</option>
+        </select>
+        <input type="file" id="zipInput" accept=".zip">
+        <button id="runBtn">הרץ בדיקה</button>
+    </div>
+    
+    <pre id="output">הפלט יופיע כאן...</pre>
+
+    <script>
+        let worker;
+        const output = document.getElementById('output');
+
+        document.getElementById('runBtn').addEventListener('click', async () => {
+            const file = document.getElementById('zipInput').files[0];
+            const exerciseId = document.getElementById('exerciseSelect').value;
+            
+            if (!file) {
+                alert("אנא בחר קובץ ZIP לבדיקה.");
+                return;
+            }
+
+            output.innerText = "מאתחל סביבת בדיקה (ייתכן שייקח מעט זמן בהרצה הראשונה)...\n";
+            const buffer = await file.arrayBuffer();
+
+            // אם קיימת בדיקה רצה, נעצור אותה
+            if (worker) worker.terminate();
+
+            worker = new Worker('worker.js');
+
+            // מנגנון ה-Timeout החדש של הדפדפן (מחליף את ה-subprocess)
+            const timeoutId = setTimeout(() => {
+                worker.terminate();
+                output.innerText += "\n\n[!] הבדיקה הופסקה (Timeout). הזמן חרג מ-4 שניות.\nסבירות גבוהה לקיום לולאה אינסופית (Infinite Loop) בקוד המוגש.";
+            }, 4000);
+
+            worker.onmessage = (e) => {
+                if (e.data.type === 'stdout') {
+                    output.innerText += e.data.text + "\n";
+                } else if (e.data.type === 'done') {
+                    clearTimeout(timeoutId); // הבדיקה הסתיימה בזמן, מבטלים את הטיימר
+                }
+            };
+
+            // שליחת הנתונים ל-Worker שרץ ברקע
+            worker.postMessage({ zipBuffer: buffer, exerciseId: exerciseId });
+        });
+    </script>
+</body>
+</html>

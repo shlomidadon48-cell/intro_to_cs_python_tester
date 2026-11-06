@@ -1,0 +1,372 @@
+{
+  "config_version": "2.2",
+  "exercises": {
+    "ex1": {
+      "expected_zip_regex": "^ex1\\.zip$",
+      "expected_files": [
+        "math_functions.py",
+        "staircase.py",
+        "smiley.py"
+      ],
+      "ast_rules": {
+        "math_functions.py": {
+          "allowed_imports": ["math"],
+          "required_calls": ["math.pi", "math.sqrt", "math.ceil"]
+        }
+      },
+      "specific_tests": [
+        {
+          "description": "pizza_extra_area valid outputs",
+          "file": "math_functions.py",
+          "func_name": "pizza_extra_area",
+          "inputs": [],
+          "expected": "311.01767270538954",
+          "output_method": "stdout"
+        },
+        {
+          "description": "steps_to_moon valid outputs",
+          "file": "math_functions.py",
+          "func_name": "steps_to_moon",
+          "inputs": [],
+          "expected": "512533334",
+          "output_method": "stdout"
+        },
+        {
+          "description": "wifi_range valid outputs",
+          "file": "math_functions.py",
+          "func_name": "wifi_range",
+          "inputs": [],
+          "expected": "116.61903789690601",
+          "output_method": "stdout"
+        },
+        {
+          "description": "draw_staircase beeper validation",
+          "file": "staircase.py",
+          "func_name": "draw_staircase",
+          "inputs": [],
+          "output_method": "karel_state",
+          "setup_karel": {
+            "cols": 10,
+            "rows": 5,
+            "col": 1,
+            "row": 1,
+            "dir": "E"
+          },
+          "expected_beepers": {
+            "(1, 2)": 1, "(2, 3)": 1, "(3, 4)": 1, "(4, 4)": 1, "(5, 4)": 1, 
+            "(6, 3)": 1, "(7, 2)": 1, "(8, 1)": 1, "(1, 1)": 1, "(2, 2)": 1, 
+            "(3, 3)": 1, "(6, 4)": 1, "(7, 3)": 1, "(8, 2)": 1, "(9, 1)": 1
+          }
+        },
+        {
+          "description": "draw_smiley beeper validation",
+          "file": "smiley.py",
+          "func_name": "draw_smiley",
+          "inputs": [],
+          "output_method": "karel_state",
+          "setup_karel": {
+            "cols": 7,
+            "rows": 7,
+            "col": 1,
+            "row": 1,
+            "dir": "E"
+          },
+          "expected_beepers": {
+            "(1,1)": 1, "(2,1)": 1, "(3,1)": 1, "(4,1)": 1, "(5,1)": 1, "(6,1)": 1, "(7,1)": 1,
+            "(1,7)": 1, "(2,7)": 1, "(3,7)": 1, "(4,7)": 1, "(5,7)": 1, "(6,7)": 1, "(7,7)": 1,
+            "(1,2)": 1, "(1,3)": 1, "(1,4)": 1, "(1,5)": 1, "(1,6)": 1,
+            "(7,2)": 1, "(7,3)": 1, "(7,4)": 1, "(7,5)": 1, "(7,6)": 1,
+            "(3,5)": 2, "(5,5)": 2, "(3,3)": 2, "(4,3)": 2, "(5,3)": 2
+          }
+        }
+      ]
+    },
+    "ex2": {
+      "expected_zip_regex": "^ex2\\.zip$",
+      "expected_files": [
+        "fitness_check.py",
+        "calorie_calculator.py",
+        "heart_rate.py",
+        "weekly_summary.py",
+        "daily_plan.py"
+      ],
+      "ast_rules": {},
+      "specific_tests": [
+        {
+          "description": "is_intense_workout - all conditions met",
+          "file": "fitness_check.py",
+          "func_name": "is_intense_workout",
+          "inputs": [640, 60, 4],
+          "expected": true,
+          "output_method": "return"
+        },
+        {
+          "description": "is_intense_workout - fail on duration",
+          "file": "fitness_check.py",
+          "func_name": "is_intense_workout",
+          "inputs": [500, 30, 4],
+          "expected": false,
+          "output_method": "return"
+        },
+        {
+          "description": "calories_burned - valid activity",
+          "file": "calorie_calculator.py",
+          "func_name": "calories_burned",
+          "inputs": ["running", 30, 70],
+          "expected": 350.0,
+          "output_method": "return"
+        },
+        {
+          "description": "calories_from_log - valid string",
+          "file": "calorie_calculator.py",
+          "func_name": "calories_from_log",
+          "inputs": ["30 running 70"],
+          "expected": 350.0,
+          "output_method": "return"
+        },
+        {
+          "description": "target_heart_rate - valid beginner",
+          "file": "heart_rate.py",
+          "func_name": "target_heart_rate",
+          "inputs": [30, "beginner"],
+          "expected": [95.0, 123.5],
+          "output_method": "return",
+          "expected_type": "tuple"
+        },
+        {
+          "description": "target_heart_rate - invalid level",
+          "file": "heart_rate.py",
+          "func_name": "target_heart_rate",
+          "inputs": [20, "elite"],
+          "expected": [null, null],
+          "output_method": "return",
+          "expected_type": "tuple"
+        },
+        {
+          "description": "most_and_least_day - distinct values",
+          "file": "weekly_summary.py",
+          "func_name": "most_and_least_day",
+          "inputs": [350.0, 180.0, 640.0],
+          "expected": [640.0, 180.0],
+          "output_method": "return",
+          "expected_type": "tuple"
+        },
+        {
+          "description": "heart_rate_user_input - valid inputs",
+          "file": "heart_rate.py",
+          "func_name": "heart_rate_user_input",
+          "inputs": [],
+          "mock_inputs": ["25 intermediate"],
+          "expected": "Insert age and fitness level: 25 intermediate\nYour target heart rate zone is 126.75 to 146.25 bpm",
+          "output_method": "stdout"
+        },
+        {
+          "description": "daily_plan - weight loss",
+          "file": "daily_plan.py",
+          "func_name": "daily_plan",
+          "inputs": [],
+          "mock_inputs": ["1", "70"],
+          "expected": 1680.0,
+          "output_method": "return"
+        },
+        {
+          "description": "daily_plan - maintenance active",
+          "file": "daily_plan.py",
+          "func_name": "daily_plan",
+          "inputs": [],
+          "mock_inputs": ["2", "70", "active"],
+          "expected": 2450.0,
+          "output_method": "return"
+        },
+        {
+          "description": "daily_plan - muscle gain frequent",
+          "file": "daily_plan.py",
+          "func_name": "daily_plan",
+          "inputs": [],
+          "mock_inputs": ["3", "70", "5"],
+          "expected": 2500.0,
+          "output_method": "return"
+        },
+        {
+          "description": "daily_plan - edge case negative weight",
+          "file": "daily_plan.py",
+          "func_name": "daily_plan",
+          "inputs": [],
+          "mock_inputs": ["1", "-5"],
+          "expected": null,
+          "output_method": "return"
+        },
+        {
+          "description": "daily_plan - large input",
+          "file": "daily_plan.py",
+          "func_name": "daily_plan",
+          "inputs": [],
+          "mock_inputs": ["1", "10000"],
+          "expected": 240000.0,
+          "output_method": "return"
+        }
+      ]
+    },
+    "ex3": {
+      "expected_zip_regex": "^ex3\\.zip$",
+      "expected_files": ["ex3.py"],
+      "ast_rules": {
+        "ex3.py": {
+          "forbidden_nodes": [
+            "ListComp",
+            "SetComp",
+            "DictComp",
+            "GeneratorExp",
+            "Import",
+            "ImportFrom"
+          ]
+        }
+      },
+      "specific_tests": [
+        {
+          "description": "longest_run - standard",
+          "file": "ex3.py",
+          "func_name": "longest_run",
+          "inputs": [["A", "A", "B", "B", "B", "A", "C", "C", "A", "A"]],
+          "expected": 3,
+          "output_method": "return"
+        },
+        {
+          "description": "run_length_encode - standard",
+          "file": "ex3.py",
+          "func_name": "run_length_encode",
+          "inputs": [["A", "A", "B", "B", "B", "A", "C", "C", "A", "A"]],
+          "expected": [["A", 2], ["B", 3], ["A", 1], ["C", 2], ["A", 2]],
+          "output_method": "return"
+        },
+        {
+          "description": "run_length_decode - standard",
+          "file": "ex3.py",
+          "func_name": "run_length_decode",
+          "inputs": [[["A", 2], ["B", 3], ["A", 1], ["C", 2], ["A", 2]]],
+          "expected": ["A", "A", "B", "B", "B", "A", "C", "C", "A", "A"],
+          "output_method": "return"
+        },
+        {
+          "description": "encode_diff - standard",
+          "file": "ex3.py",
+          "func_name": "encode_diff",
+          "inputs": [["A", "A", "B", "C"], ["A", "B", "B", "C"]],
+          "expected": [["same", 1], ["diff", 1], ["same", 2]],
+          "output_method": "return"
+        },
+        {
+          "description": "compress_cols - standard",
+          "file": "ex3.py",
+          "func_name": "compress_cols",
+          "inputs": [[[0, 0, 1], [0, 1, 1], [0, 1, 0]]],
+          "expected": [[[0, 3]], [[0, 1], [1, 2]], [[1, 2], [0, 1]]],
+          "output_method": "return"
+        },
+        {
+          "description": "encode_user_input - reads inputs and encodes",
+          "file": "ex3.py",
+          "func_name": "encode_user_input",
+          "inputs": [],
+          "mock_inputs": ["A", "A", "B", "B", "B", "A", ""],
+          "expected": [[["A", 2], ["B", 3], ["A", 1]], 1.0],
+          "output_method": "return",
+          "expected_type": "tuple"
+        }
+      ]
+    },
+    "ex4": {
+      "expected_zip_regex": "^ex4\\.zip$",
+      "expected_files": ["ex4.py"],
+      "ast_rules": {},
+      "specific_tests": [
+        {
+          "description": "create_board - standard",
+          "file": "ex4.py",
+          "func_name": "create_board",
+          "inputs": [2, 3],
+          "expected": [[".", ".", "."], [".", ".", "."]],
+          "output_method": "return"
+        },
+        {
+          "description": "is_valid_move - valid empty column",
+          "file": "ex4.py",
+          "func_name": "is_valid_move",
+          "inputs": [[[".", ".", "."], [".", ".", "."]], 1],
+          "expected": true,
+          "output_method": "return"
+        },
+        {
+          "description": "is_valid_move - invalid column full",
+          "file": "ex4.py",
+          "func_name": "is_valid_move",
+          "inputs": [[["X", ".", "."], ["O", ".", "."]], 0],
+          "expected": false,
+          "output_method": "return"
+        },
+        {
+          "description": "make_move - valid move mutates board",
+          "file": "ex4.py",
+          "func_name": "make_move",
+          "inputs": [
+            [[".", ".", "."], [".", ".", "."], ["O", "X", "."]], 
+            2, 
+            "X"
+          ],
+          "expected": true,
+          "expected_mutation": [
+            [".", ".", "."], 
+            [".", ".", "."], 
+            ["O", "X", "X"]
+          ],
+          "mutated_arg_index": 0,
+          "output_method": "return"
+        },
+        {
+          "description": "check_winner - horizontal win",
+          "file": "ex4.py",
+          "func_name": "check_winner",
+          "inputs": [
+            [[".", ".", ".", "."], [".", ".", ".", "."], [".", ".", ".", "."], ["X", "X", "X", "X"]], 
+            "X"
+          ],
+          "expected": true,
+          "output_method": "return"
+        },
+        {
+          "description": "check_winner - vertical win",
+          "file": "ex4.py",
+          "func_name": "check_winner",
+          "inputs": [
+            [[".", ".", ".", "X"], [".", ".", ".", "X"], [".", ".", ".", "X"], [".", ".", ".", "X"]], 
+            "X"
+          ],
+          "expected": true,
+          "output_method": "return"
+        },
+        {
+          "description": "check_winner - diagonal win",
+          "file": "ex4.py",
+          "func_name": "check_winner",
+          "inputs": [
+            [["X", ".", ".", "."], [".", "X", ".", "."], [".", ".", "X", "."], [".", ".", ".", "X"]], 
+            "X"
+          ],
+          "expected": true,
+          "output_method": "return"
+        },
+        {
+          "description": "check_winner - no win",
+          "file": "ex4.py",
+          "func_name": "check_winner",
+          "inputs": [
+            [[".", ".", ".", "."], [".", ".", ".", "."], [".", ".", ".", "."], ["X", "X", "O", "X"]], 
+            "X"
+          ],
+          "expected": false,
+          "output_method": "return"
+        }
+      ]
+    }
+  }
+}
