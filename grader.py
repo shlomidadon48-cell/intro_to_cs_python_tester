@@ -82,7 +82,7 @@ def analyze_code(code_content, filename, ast_rules_config):
 
         if isinstance(node, ast.FunctionDef):
             if not ast.get_docstring(node):
-                if "staircase" not in filename and "smiley" not in filename:
+                if node.name != "main":
                     errors["docstring"].append(f"{filename}{line_suffix}: Missing docstring in function '{node.name}'.")
             
             if not re.match(r'^[a-z_][a-z0-9_]*$', node.name):
