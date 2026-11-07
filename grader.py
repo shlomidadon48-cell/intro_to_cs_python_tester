@@ -28,7 +28,7 @@ def check_raw_text_style(code_content, filename):
         line_num = i + 1
 
         if len(line) > 79:
-            errors.append(f"{filename}:{line_num}: line exceeds 79 characters ({len(line)} chars")
+            errors.append(f"{filename}:{line_num}: line exceeds 79 characters ({len(line)} chars)")
 
         # מסוך (Masking) של תוכן בתוך גרשיים כדי למנוע אזעקות שווא על רווחים בתוך טקסט
         masked_line = re.sub(r'(".*?"|\'.*?\')', '""', line)
