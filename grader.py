@@ -10,7 +10,6 @@ import io
 from contextlib import redirect_stdout
 
 CONFIG_FILE = 'config.json'
-TIMEOUT_SECONDS = 3  # Maximum allowed seconds for a single test run to prevent infinite loops
 
 def load_config():
     if not os.path.exists(CONFIG_FILE):
@@ -27,22 +26,9 @@ def check_raw_text_style(code_content, filename):
     
     for i, line in enumerate(lines):
         line_num = i + 1
-        
-        # זיהוי פתיחה או סגירה של מחרוזות תיעוד (Docstrings)
-        has_docstring_quotes = '"""' in line or "'''" in line
-        if has_docstring_quotes:
-            quotes_count = line.count('"""') + line.count("'''")
-            if quotes_count % 2 != 0:
-                in_multiline_string = not in_multiline_string
-        
-        # התעלמות מהערות ורווחים בתחילת שורה לבדיקת האורך של 79 תווים
-        is_full_comment = line.lstrip().startswith('#')
-        code_only = line.split('#')[0].rstrip() if '#' in line else line.rstrip()
-        code_no_indent = code_only.lstrip()
 
-        if not in_multiline_string and not is_full_comment and not has_docstring_quotes:
-            if len(code_no_indent) > 79:
-                errors.append(f"{filename}:{line_num}: Code line exceeds 79 characters ({len(code_no_indent)} chars excluding indentation).")
+        if len(line) > 79:
+            errors.append(f"{filename}:{line_num}: line exceeds 79 characters ({len(line)} chars")
 
         # מסוך (Masking) של תוכן בתוך גרשיים כדי למנוע אזעקות שווא על רווחים בתוך טקסט
         masked_line = re.sub(r'(".*?"|\'.*?\')', '""', line)
