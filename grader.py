@@ -197,7 +197,7 @@ def generate_and_run_tests(temp_dir, tests):
         "            def mock_input(prompt=''):",
         "                print(prompt, end='')",
         "                try: val = str(next(input_iter))",
-        "                except StopIteration: val = ''",
+        "                except StopIteration: raise EOFError('End of mock inputs')",  # <-- שורה מעודכנת שזורקת שגיאת EOFError טבעית
         "                print(val)",
         "                return val",
         "            builtins.input = mock_input",
