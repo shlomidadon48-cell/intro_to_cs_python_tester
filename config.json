@@ -12,6 +12,15 @@
         "math_functions.py": {
           "allowed_imports": ["math"],
           "required_calls": ["math.pi", "math.sqrt", "math.ceil"]
+        },
+        "staircase.py": {
+          "required_calls": [
+            "draw_step_up",
+            "draw_step_down",
+            "draw_floor",
+            "draw_staircase_up",
+            "draw_staircase_down"
+          ]
         }
       },
       "specific_tests": [
@@ -219,6 +228,10 @@
             "GeneratorExp",
             "Import",
             "ImportFrom"
+          ],
+          "required_calls": [
+            "run_length_encode",
+            "read_symbols_until_empty"
           ]
         }
       },
@@ -270,6 +283,49 @@
           "inputs": [],
           "mock_inputs": ["A", "A", "B", "B", "B", "A", ""],
           "expected": [[["A", 2], ["B", 3], ["A", 1]], 1.0],
+          "output_method": "return",
+          "expected_type": "tuple"
+        },
+        {
+          "description": "read_symbols_until_empty - spaces as valid symbols (should not strip)",
+          "file": "ex3.py",
+          "func_name": "read_symbols_until_empty",
+          "inputs": [],
+          "mock_inputs": [" ", "  ", ""],
+          "expected": [" ", "  "],
+          "output_method": "return"
+        },
+        {
+          "description": "longest_run - empty list edge case",
+          "file": "ex3.py",
+          "func_name": "longest_run",
+          "inputs": [[]],
+          "expected": 0,
+          "output_method": "return"
+        },
+        {
+          "description": "compress_cols - empty matrix edge case",
+          "file": "ex3.py",
+          "func_name": "compress_cols",
+          "inputs": [[]],
+          "expected": [],
+          "output_method": "return"
+        },
+        {
+          "description": "compress_cols - 1x1 matrix edge case",
+          "file": "ex3.py",
+          "func_name": "compress_cols",
+          "inputs": [[[1]]],
+          "expected": [[[1, 1]]],
+          "output_method": "return"
+        },
+        {
+          "description": "encode_user_input - immediate empty input (ratio is None/null)",
+          "file": "ex3.py",
+          "func_name": "encode_user_input",
+          "inputs": [],
+          "mock_inputs": [""],
+          "expected": [[], null],
           "output_method": "return",
           "expected_type": "tuple"
         }
@@ -353,6 +409,56 @@
             "X"
           ],
           "expected": false,
+          "output_method": "return"
+        },
+        {
+          "description": "is_valid_move - negative index (prevents Python wrap-around bug)",
+          "file": "ex4.py",
+          "func_name": "is_valid_move",
+          "inputs": [[[".", "."], [".", "."]], -1],
+          "expected": false,
+          "output_method": "return"
+        },
+        {
+          "description": "is_valid_move - out of bounds upper limit",
+          "file": "ex4.py",
+          "func_name": "is_valid_move",
+          "inputs": [[[".", "."], [".", "."]], 2],
+          "expected": false,
+          "output_method": "return"
+        },
+        {
+          "description": "make_move - attempt to drop in full column (returns False, no mutation)",
+          "file": "ex4.py",
+          "func_name": "make_move",
+          "inputs": [[["X", "."], ["O", "."]], 0, "O"],
+          "expected": false,
+          "expected_mutation": [["X", "."], ["O", "."]],
+          "mutated_arg_index": 0,
+          "output_method": "return"
+        },
+        {
+          "description": "check_winner - extreme edge row win (bottom)",
+          "file": "ex4.py",
+          "func_name": "check_winner",
+          "inputs": [[[".", ".", ".", "."], ["X", "X", "X", "X"]], "X"],
+          "expected": true,
+          "output_method": "return"
+        },
+        {
+          "description": "board_full - edge case of 1x1 empty board",
+          "file": "ex4.py",
+          "func_name": "board_full",
+          "inputs": [[[".", "."]]],
+          "expected": false,
+          "output_method": "return"
+        },
+        {
+          "description": "choose_computer_move - Priority 2: block opponent immediate win",
+          "file": "ex4.py",
+          "func_name": "choose_computer_move",
+          "inputs": [[[".", ".", ".", "."], ["O", "O", "O", "."]], "X"],
+          "expected": 3,
           "output_method": "return"
         }
       ]
