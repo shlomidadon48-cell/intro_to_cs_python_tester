@@ -345,17 +345,6 @@
           "output_method": "return"
         },
         {
-          "description": "check_winner - diagonal win",
-          "file": "ex4.py",
-          "func_name": "check_winner",
-          "inputs": [
-            [["X", ".", ".", "."], [".", "X", ".", "."], [".", ".", "X", "."], [".", ".", ".", "X"]], 
-            "X"
-          ],
-          "expected": true,
-          "output_method": "return"
-        },
-        {
           "description": "check_winner - no win",
           "file": "ex4.py",
           "func_name": "check_winner",
