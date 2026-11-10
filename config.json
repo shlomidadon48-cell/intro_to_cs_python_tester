@@ -1,5 +1,5 @@
 {
-  "config_version": "2.2",
+  "config_version": "2.3",
   "exercises": {
     "ex1": {
       "expected_zip_regex": "^ex1\\.zip$",
@@ -462,6 +462,209 @@
           "output_method": "return"
         }
       ]
-    }
+    },
+    "ex5": {
+      "expected_zip_regex": "^ex5\\.zip$",
+      "expected_files": [
+        "wordsearch.py"
+      ],
+      "ast_rules": {
+        "wordsearch.py": {
+          "allowed_imports": ["sys", "os"],
+          "required_calls": [
+            "read_word_list",
+            "read_matrix",
+            "find_words",
+            "write_output",
+            "check_input_args"
+          ]
+        }
+      },
+      "specific_tests": [
+        {
+          "description": "read_word_list - standard file parsing",
+          "file": "wordsearch.py",
+          "func_name": "read_word_list",
+          "setup_files": {
+            "test_words.txt": "apple\nbanana\ncat\ndog\n"
+          },
+          "inputs": ["test_words.txt"],
+          "expected": ["apple", "banana", "cat", "dog"],
+          "output_method": "return"
+        },
+        {
+          "description": "read_word_list - edge case: empty lines and spaces",
+          "file": "wordsearch.py",
+          "func_name": "read_word_list",
+          "setup_files": {
+            "test_words_space.txt": "  cat  \n\n  dog \n"
+          },
+          "inputs": ["test_words_space.txt"],
+          "expected": ["cat", "dog"],
+          "output_method": "return"
+        },
+        {
+          "description": "read_matrix - standard comma-separated matrix",
+          "file": "wordsearch.py",
+          "func_name": "read_matrix",
+          "setup_files": {
+            "test_matrix.txt": "a,b,c\nd,e,f\ng,h,i\n"
+          },
+          "inputs": ["test_matrix.txt"],
+          "expected": [["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"]],
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - horizontal right ('r') search",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["cat", "dog"],
+            [["c", "a", "t"], ["d", "o", "g"]],
+            "r"
+          ],
+          "expected": [["cat", 1], ["dog", 1]],
+          "sort_tuples_result": true,
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - all 8 directions (u, d, r, l, w, x, y, z)",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["cat", "tac", "god"],
+            [["c", "a", "t"], ["o", "o", "a"], ["g", "d", "c"]],
+            "udrlwxyz"
+          ],
+          "expected": [["cat", 2], ["tac", 2], ["god", 1]],
+          "sort_tuples_result": true,
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - edge case: duplicate directions string ('rrud')",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["cat"],
+            [["c", "a", "t"]],
+            "rrud"
+          ],
+          "expected": [["cat", 1]],
+          "sort_tuples_result": true,
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - edge case: overlapping and palindrome words",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["mom", "ana"],
+            [["m", "o", "m"], ["a", "n", "a"]],
+            "rl"
+          ],
+          "expected": [["mom", 2], ["ana", 2]],
+          "sort_tuples_result": true,
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - edge case: word not in matrix",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["zebra"],
+            [["a", "b"], ["c", "d"]],
+            "udrl"
+          ],
+          "expected": [],
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - edge case: empty word list",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            [],
+            [["a", "b"], ["c", "d"]],
+            "r"
+          ],
+          "expected": [],
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - edge case: 1x1 matrix and single-letter word",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["a"],
+            [["a"]],
+            "r"
+          ],
+          "expected": [["a", 1]],
+          "output_method": "return"
+        },
+        {
+          "description": "write_output - creates file with word counts format",
+          "file": "wordsearch.py",
+          "func_name": "write_output",
+          "inputs": [
+            [["cat", 1], ["dog", 3]],
+            "test_out.txt"
+          ],
+          "expected_file_content": {
+            "filename": "test_out.txt",
+            "content": "cat,1\ndog,3"
+          },
+          "output_method": "return"
+        },
+        {
+          "description": "check_input_args - valid CLI arguments",
+          "file": "wordsearch.py",
+          "func_name": "check_input_args",
+          "setup_files": {
+            "w.txt": "cat",
+            "m.txt": "c,a,t"
+          },
+          "inputs": [
+            ["wordsearch.py", "w.txt", "m.txt", "out.txt", "udrl"]
+          ],
+          "expected": null,
+          "output_method": "return"
+        },
+        {
+          "description": "check_input_args - invalid direction string",
+          "file": "wordsearch.py",
+          "func_name": "check_input_args",
+          "setup_files": {
+            "w.txt": "cat",
+            "m.txt": "c,a,t"
+          },
+          "inputs": [
+            ["wordsearch.py", "w.txt", "m.txt", "out.txt", "udrK"]
+          ],
+          "expected": "Invalid direction indicator: K",
+          "output_method": "return"
+        },
+        {
+          "description": "check_input_args - invalid number of arguments",
+          "file": "wordsearch.py",
+          "func_name": "check_input_args",
+          "inputs": [
+            ["wordsearch.py", "w.txt", "m.txt"]
+          ],
+          "expected": "Wrong number of arguments provided.",
+          "output_method": "return"
+        },
+        {
+          "description": "check_input_args - non-existent file",
+          "file": "wordsearch.py",
+          "func_name": "check_input_args",
+          "inputs": [
+            ["wordsearch.py", "non_existent.txt", "non_existent_matrix.txt", "out.txt", "udrl"]
+          ],
+          "expected": "File non_existent.txt does not exist.",
+          "output_method": "return"
+        }
+      ]
+    }    
   }
 }

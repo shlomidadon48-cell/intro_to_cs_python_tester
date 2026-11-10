@@ -147,12 +147,11 @@ def generate_and_run_tests(temp_dir, tests):
     test_script_path = os.path.join(temp_dir, "run_dynamic_tests.py")
     tests_data_path = os.path.join(temp_dir, "tests_data.json")
     
-    # 1. שמירת הבדיקות לקובץ JSON נפרד, במקום הזרקה לתוך קוד פייתון
     with open(tests_data_path, 'w', encoding='utf-8') as f:
         json.dump(tests, f, indent=2)
     
     script_content = [
-        "import sys, json, io, traceback, builtins",
+        "import sys, json, io, os, traceback, builtins",
         "import copy",
         "from contextlib import redirect_stdout",
         
@@ -163,40 +162,67 @@ def generate_and_run_tests(temp_dir, tests):
         
         "results = {'passed': 0, 'failed': 0, 'details': []}",
         
-        # 2. קריאת הנתונים מהקובץ בצורה בטוחה
         "with open('tests_data.json', 'r', encoding='utf-8') as f:",
         "    tests = json.load(f)",
         
         "for test in tests:",
         "    try:",
+        # יצירת קבצי עזר במידה והבדיקה דורשת זאת (למשל מילון או מטריצה)
+        "        if 'setup_files' in test:",
+        "            for fname, content in test['setup_files'].items():",
+        "                with open(fname, 'w', encoding='utf-8') as sf:",
+        "                    sf.write(content)",
+        
         "        mod = __import__(test['file'].replace('.py', ''))",
         "        func = getattr(mod, test['func_name'])",
         "        args_list = copy.deepcopy(test.get('inputs', []))",
         
-        # Setup Karel if needed
+        # Karel setup
         "        if test.get('output_method') == 'karel_state':",
         "            karel.new_world(**test['setup_karel'])",
         
-        # MOCK INPUT SETUP
+        # Mock sys.argv if provided
+        "        if 'mock_argv' in test:",
+        "            sys.argv = test['mock_argv']",
+        
+        # Mock inputs
         "        if 'mock_inputs' in test:",
         "            input_iter = iter(test['mock_inputs'])",
         "            def mock_input(prompt=''):",
         "                print(prompt, end='')",
         "                try: val = str(next(input_iter))",
-        "                except StopIteration: raise EOFError('End of mock inputs')",  # <-- שורה מעודכנת שזורקת שגיאת EOFError טבעית
+        "                except StopIteration: raise EOFError('End of mock inputs')",
         "                print(val)",
         "                return val",
         "            builtins.input = mock_input",
         "        else:",
         "            builtins.input = input",
         
-        # RUN FUNCTION
+        # Run function
         "        f = io.StringIO()",
         "        with redirect_stdout(f):",
         "            res = func(*args_list)",
         "        stdout_output = f.getvalue().strip()",
         
-        # VALIDATE KAREL STATE
+        # Check output file content if expected
+        "        if 'expected_file_content' in test:",
+        "            out_file = test['expected_file_content']['filename']",
+        "            expected_text = test['expected_file_content']['content'].strip()",
+        "            if not os.path.exists(out_file):",
+        "                results['failed'] += 1",
+        "                results['details'].append(f\"[X] {test['description']} - Failed. Output file '{out_file}' was not created.\")",
+        "                continue",
+        "            with open(out_file, 'r', encoding='utf-8') as rf:",
+        "                actual_text = rf.read().strip()",
+        "            if actual_text == expected_text:",
+        "                results['passed'] += 1",
+        "                results['details'].append(f\"[V] {test['description']} - Passed\")",
+        "            else:",
+        "                results['failed'] += 1",
+        "                results['details'].append(f\"[X] {test['description']} - Failed. File content mismatch. Expected:\\n{expected_text}\\nGot:\\n{actual_text}\")",
+        "            continue",
+        
+        # Validate Karel State
         "        if test.get('output_method') == 'karel_state':",
         "            expected_karel = test['expected_beepers']",
         "            actual_karel = {str(k): v for k, v in karel._w.beepers.items()}",
@@ -208,7 +234,7 @@ def generate_and_run_tests(temp_dir, tests):
         "                results['details'].append(f\"[X] {test['description']} - Failed. Karel state mismatch.\")",
         "            continue",
         
-        # VALIDATE IN-PLACE MUTATION
+        # Validate mutation
         "        if 'expected_mutation' in test:",
         "            idx = test['mutated_arg_index']",
         "            actual_mutation = args_list[idx]",
@@ -217,7 +243,7 @@ def generate_and_run_tests(temp_dir, tests):
         "                results['details'].append(f\"[X] {test['description']} - Failed. State mutation mismatch.\")",
         "                continue",
         
-        # VALIDATE RETURNS AND STDOUT
+        # Validate returns and stdout
         "        if test.get('output_method') == 'stdout':",
         "            actual = stdout_output",
         "            expected = str(test['expected']).strip()",
@@ -227,7 +253,15 @@ def generate_and_run_tests(temp_dir, tests):
         "            if test.get('expected_type') == 'tuple' and isinstance(expected, list):",
         "                expected = tuple(expected)",
         
-        "        if str(actual) == str(expected) or actual == expected:",
+        # Equality check (supporting sort-insensitive lists of tuples/lists if needed)
+        "        if test.get('sort_tuples_result') and isinstance(actual, list) and isinstance(expected, list):",
+        "            actual_cmp = sorted([tuple(x) for x in actual])",
+        "            expected_cmp = sorted([tuple(x) for x in expected])",
+        "            is_equal = (actual_cmp == expected_cmp)",
+        "        else:",
+        "            is_equal = (str(actual) == str(expected) or actual == expected)",
+        
+        "        if is_equal:",
         "            results['passed'] += 1",
         "            results['details'].append(f\"[V] {test['description']} - Passed\")",
         "        else:",
@@ -237,16 +271,13 @@ def generate_and_run_tests(temp_dir, tests):
         "    except Exception as e:",
         "        results['failed'] += 1",
         "        results['details'].append(f\"[X] {test['description']} - Crashed: {type(e).__name__} - {str(e)}\")",
-        "print(json.dumps(results))" 
+        "print(json.dumps(results))"
     ]
     
     with open(test_script_path, 'w', encoding='utf-8') as f:
         f.write("\n".join(script_content))
         
     print("\n--- Running Dynamic Unit Tests ---")
-    
-    import io
-    from contextlib import redirect_stdout
     
     old_cwd = os.getcwd()
     os.chdir(temp_dir)
@@ -255,7 +286,6 @@ def generate_and_run_tests(temp_dir, tests):
     f = io.StringIO()
     try:
         with redirect_stdout(f):
-            # הרצה ישירה במקום subprocess
             exec(open("run_dynamic_tests.py", encoding="utf-8").read(), {})
     except Exception as e:
         print(json.dumps({"passed": 0, "failed": len(tests), "details": [f"[X] Crashed: {type(e).__name__} - {e}"]}))
@@ -265,7 +295,6 @@ def generate_and_run_tests(temp_dir, tests):
         
     stdout_output = f.getvalue().strip()
     try:
-        # חילוץ ה-JSON משורת הפלט האחרונה
         lines = [line for line in stdout_output.split("\n") if line.strip()]
         test_results = json.loads(lines[-1]) if lines else {"passed": 0, "failed": len(tests), "details": []}
         for detail in test_results.get('details', []):
