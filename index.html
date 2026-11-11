@@ -51,8 +51,8 @@
             // מנגנון ה-Timeout החדש של הדפדפן (מחליף את ה-subprocess)
             const timeoutId = setTimeout(() => {
                 worker.terminate();
-                output.innerText += "\n\n[!] הבדיקה הופסקה (Timeout). הזמן חרג מ-4 שניות.\nסבירות גבוהה לקיום לולאה אינסופית (Infinite Loop) בקוד המוגש.";
-            }, 4000);
+                output.innerText += "\n\n[!] הבדיקה הופסקה (Timeout). הזמן חרג מ-10 שניות.\nסבירות גבוהה לקיום לולאה אינסופית (Infinite Loop) בקוד המוגש.";
+            }, 10000);
 
             worker.onmessage = (e) => {
                 if (e.data.type === 'stdout') {

@@ -460,6 +460,96 @@
           "inputs": [[[".", ".", ".", "."], ["O", "O", "O", "."]], "X"],
           "expected": 3,
           "output_method": "return"
+        },
+        {
+          "description": "choose_computer_move - Priority 3: choose first available column",
+          "file": "ex4.py",
+          "func_name": "choose_computer_move",
+          "inputs": [[[".", ".", "."], [".", ".", "."]], "X"],
+          "expected": 0,
+          "output_method": "return"
+        },
+        {
+          "description": "create_board - standard 6x7 board",
+          "file": "ex4.py",
+          "func_name": "create_board",
+          "inputs": [6, 7],
+          "expected": [
+            [".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", "."]
+          ],
+          "output_method": "return"
+        },
+        {
+          "description": "is_valid_move - valid empty column",
+          "file": "ex4.py",
+          "func_name": "is_valid_move",
+          "inputs": [[
+            [".", ".", "."],
+            [".", ".", "."]
+          ], 1],
+          "expected": true,
+          "output_method": "return"
+        },
+        {
+          "description": "is_valid_move - completely full column",
+          "file": "ex4.py",
+          "func_name": "is_valid_move",
+          "inputs": [[
+            [".", "X", "."],
+            [".", "O", "."]
+          ], 1],
+          "expected": false,
+          "output_method": "return"
+        },
+        {
+          "description": "make_move - successful drop to lowest empty space",
+          "file": "ex4.py",
+          "func_name": "make_move",
+          "inputs": [[
+            [".", ".", "."],
+            [".", ".", "."],
+            [".", "O", "."]
+          ], 1, "X"],
+          "expected": true,
+          "expected_mutation": [
+            [".", ".", "."],
+            [".", "X", "."],
+            [".", "O", "."]
+          ],
+          "mutated_arg_index": 0,
+          "output_method": "return"
+        },
+        {
+          "description": "check_winner - horizontal win detected",
+          "file": "ex4.py",
+          "func_name": "check_winner",
+          "inputs": [[
+            [".", ".", ".", ".", ".", ".", "."],
+            ["X", "X", "X", "X", ".", ".", "."]
+          ], "X"],
+          "expected": true,
+          "output_method": "return"
+        },
+        {
+          "description": "main - full game simulation (exact stdout match)",
+          "file": "ex4.py",
+          "func_name": "main",
+          "mock_inputs": [
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          "expected": "0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\nEnter column number: 0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX . . . . . .\n0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX O . . . . .\nEnter column number: 0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX . . . . . .\nX O . . . . .\n0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX O . . . . .\nX O . . . . .\nEnter column number: 0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX . . . . . .\nX O . . . . .\nX O . . . . .\n0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX O . . . . .\nX O . . . . .\nX O . . . . .\nEnter column number: 0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\nX . . . . . .\nX O . . . . .\nX O . . . . .\nX O . . . . .\nPlayer X wins!",
+          "output_method": "stdout"
         }
       ]
     },
@@ -662,6 +752,105 @@
             ["wordsearch.py", "non_existent.txt", "non_existent_matrix.txt", "out.txt", "udrl"]
           ],
           "expected": "File non_existent.txt does not exist.",
+          "output_method": "return"
+        },
+        {
+          "description": "read_matrix - edge case: empty file should return empty list",
+          "file": "wordsearch.py",
+          "func_name": "read_matrix",
+          "setup_files": {
+            "empty_matrix.txt": ""
+          },
+          "inputs": ["empty_matrix.txt"],
+          "expected": [],
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - edge case: empty matrix (should not crash)",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["cat", "dog"],
+            [],
+            "udrlwxyz"
+          ],
+          "expected": [],
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - edge case: word is longer than the entire matrix dimensions",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["hello"],
+            [["h", "e"], ["l", "l"]],
+            "udrl"
+          ],
+          "expected": [],
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - edge case: overlapping occurrences of the SAME word in the SAME direction",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["aba"],
+            [["a", "b", "a", "b", "a"]],
+            "r"
+          ],
+          "expected": [["aba", 2]],
+          "sort_tuples_result": true,
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - edge case: target word characters do not exist in matrix at all",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["xyz"],
+            [["a", "b", "c"], ["d", "e", "f"]],
+            "udrlwxyz"
+          ],
+          "expected": [],
+          "output_method": "return"
+        },
+        {
+          "description": "write_output - edge case: empty results list should create an empty file (not crash or write null)",
+          "file": "wordsearch.py",
+          "func_name": "write_output",
+          "inputs": [
+            [],
+            "empty_out.txt"
+          ],
+          "expected_file_content": {
+            "filename": "empty_out.txt",
+            "content": ""
+          },
+          "output_method": "return"
+        },
+        {
+          "description": "check_input_args - edge case: word file exists, but matrix file does not",
+          "file": "wordsearch.py",
+          "func_name": "check_input_args",
+          "setup_files": {
+            "w.txt": "cat"
+          },
+          "inputs": [
+            ["wordsearch.py", "w.txt", "missing_matrix.txt", "out.txt", "udrl"]
+          ],
+          "expected": "File missing_matrix.txt does not exist.",
+          "output_method": "return"
+        },
+        {
+          "description": "find_words - edge case: finding single letter multiple times across matrix",
+          "file": "wordsearch.py",
+          "func_name": "find_words",
+          "inputs": [
+            ["a"],
+            [["a", "b", "a"], ["c", "a", "d"]],
+            "u"
+          ],
+          "expected": [["a", 3]],
           "output_method": "return"
         }
       ]
