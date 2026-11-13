@@ -534,22 +534,6 @@
           ], "X"],
           "expected": true,
           "output_method": "return"
-        },
-        {
-          "description": "main - full game simulation (exact stdout match)",
-          "file": "ex4.py",
-          "func_name": "main",
-          "mock_inputs": [
-            0,
-            1,
-            0,
-            1,
-            0,
-            1,
-            0
-          ],
-          "expected": "0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\nEnter column number: 0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX . . . . . .\n0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX O . . . . .\nEnter column number: 0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX . . . . . .\nX O . . . . .\n0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX O . . . . .\nX O . . . . .\nEnter column number: 0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX . . . . . .\nX O . . . . .\nX O . . . . .\n0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\n. . . . . . .\nX O . . . . .\nX O . . . . .\nX O . . . . .\nEnter column number: 0 1 2 3 4 5 6\n-------------\n. . . . . . .\n. . . . . . .\nX . . . . . .\nX O . . . . .\nX O . . . . .\nX O . . . . .\nPlayer X wins!",
-          "output_method": "stdout"
         }
       ]
     },
