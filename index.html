@@ -9,10 +9,11 @@
         #output { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; direction: ltr; text-align: left; overflow-x: auto; min-height: 200px; }
         .controls { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
         button, select, input { padding: 8px 12px; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
 </head>
 <body>
-    <h1>בודק מטלות - Intro2CS</h1>
+   <h1>בודק מטלות - Intro2CS</h1>
     <div class="controls">
         <select id="exerciseSelect">
             <option value="ex1">תרגיל 1</option>
@@ -24,46 +25,83 @@
         <input type="file" id="zipInput" accept=".zip">
         <button id="runBtn">הרץ בדיקה</button>
     </div>
+
+    <!-- אזור גרירת קבצים -->
+    <div id="dropZone" style="border: 2px dashed #888; border-radius: 6px; padding: 18px; text-align: center; margin-bottom: 16px; cursor: pointer;">
+        גרור לכאן את קובץ ה-ZIP לבדיקה
+    </div>
     
     <pre id="output">הפלט יופיע כאן...</pre>
 
     <script>
-        let worker;
         const output = document.getElementById('output');
+        const runBtn = document.getElementById('runBtn');
+        const zipInput = document.getElementById('zipInput');
+        const dropZone = document.getElementById('dropZone');
 
-        document.getElementById('runBtn').addEventListener('click', async () => {
-            const file = document.getElementById('zipInput').files[0];
+        let prewarmedWorker = new Worker('worker.js?v=3');
+
+        function getFreshWorker() {
+            const current = prewarmedWorker;
+            prewarmedWorker = new Worker('worker.js?v=3');
+            return current;
+        }
+
+        async function startGrading(file) {
             const exerciseId = document.getElementById('exerciseSelect').value;
-            
             if (!file) {
                 alert("אנא בחר קובץ ZIP לבדיקה.");
                 return;
             }
 
-            output.innerText = "מאתחל סביבת בדיקה (ייתכן שייקח מעט זמן בהרצה הראשונה)...\n";
-            const buffer = await file.arrayBuffer();
+            runBtn.disabled = true;
+            output.innerText = "טוען סביבת Python ומריץ בדיקות...\n";
 
-            // אם קיימת בדיקה רצה, נעצור אותה
-            if (worker) worker.terminate();
+            try {
+                const buffer = await file.arrayBuffer();
+                const activeWorker = getFreshWorker();
 
-            worker = new Worker('worker.js?v=2');
+                const timeoutId = setTimeout(() => {
+                    activeWorker.terminate();
+                    runBtn.disabled = false;
+                    output.innerText += "\n\n[!] הבדיקה הופסקה (Timeout). הזמן חרג מ-10 שניות.\nסבירות גבוהה לקיום לולאה אינסופית (Infinite Loop) בקוד המוגש.";
+                }, 10000);
 
-            // מנגנון ה-Timeout החדש של הדפדפן (מחליף את ה-subprocess)
-            const timeoutId = setTimeout(() => {
-                worker.terminate();
-                output.innerText += "\n\n[!] הבדיקה הופסקה (Timeout). הזמן חרג מ-10 שניות.\nסבירות גבוהה לקיום לולאה אינסופית (Infinite Loop) בקוד המוגש.";
-            }, 10000);
+                activeWorker.onmessage = (e) => {
+                    if (e.data.type === 'stdout') {
+                        output.innerText += e.data.text + "\n";
+                    } else if (e.data.type === 'done') {
+                        clearTimeout(timeoutId);
+                        activeWorker.terminate();
+                        runBtn.disabled = false;
+                    }
+                };
 
-            worker.onmessage = (e) => {
-                if (e.data.type === 'stdout') {
-                    output.innerText += e.data.text + "\n";
-                } else if (e.data.type === 'done') {
-                    clearTimeout(timeoutId); // הבדיקה הסתיימה בזמן, מבטלים את הטיימר
-                }
-            };
+                activeWorker.postMessage(
+                    { zipBuffer: buffer, exerciseId: exerciseId, fileName: file.name },
+                    [buffer]
+                );
+            } catch (err) {
+                runBtn.disabled = false;
+                output.innerText += `\n[!] שגיאה בקריאת הקובץ: ${err}`;
+            }
+        }
 
-            // שליחת הנתונים ל-Worker שרץ ברקע
-            worker.postMessage({ zipBuffer: buffer, exerciseId: exerciseId, fileName: file.name });
+        runBtn.addEventListener('click', () => startGrading(zipInput.files[0]));
+
+        // אירועי גרירה ושחרור (Drag & Drop)
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#f0f4ff';
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.background = '';
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '';
+            const file = e.dataTransfer.files[0];
+            if (file) startGrading(file);
         });
     </script>
 </body>

@@ -540,304 +540,208 @@
     "ex5": {
       "expected_zip_regex": "^ex5\\.zip$",
       "expected_files": [
-        "wordsearch.py"
+        "cipher_cracker.py"
+      ],
+      "expected_non_code_files": [
+        "test_cipher_cracker.py",
+        "runtime_report.png",
+        "README.txt"
+      ],
+      "strict_zip_contents": true,
+      "pytest_files": [
+        "test_cipher_cracker.py"
       ],
       "ast_rules": {
-        "wordsearch.py": {
-          "allowed_imports": ["sys", "os"],
+        "cipher_cracker.py": {
+          "allowed_imports": ["sys", "typing"],
           "required_calls": [
-            "read_word_list",
-            "read_matrix",
-            "find_words",
-            "write_output",
-            "check_input_args"
+            "load_word_scores",
+            "load_keys",
+            "decrypt_vigenere",
+            "score_text",
+            "crack_cipher",
+            "write_report"
           ]
         }
       },
       "specific_tests": [
         {
-          "description": "read_word_list - standard file parsing",
-          "file": "wordsearch.py",
-          "func_name": "read_word_list",
+          "description": "load_word_scores - standard file parsing",
+          "file": "cipher_cracker.py",
+          "func_name": "load_word_scores",
           "setup_files": {
-            "test_words.txt": "apple\nbanana\ncat\ndog\n"
+            "words_std.txt": "the,1\nattack,10\ndawn,6\nat,1\n"
           },
-          "inputs": ["test_words.txt"],
-          "expected": ["apple", "banana", "cat", "dog"],
+          "inputs": ["words_std.txt"],
+          "expected": {"the": 1, "attack": 10, "dawn": 6, "at": 1},
           "output_method": "return"
         },
         {
-          "description": "read_word_list - edge case: empty lines and spaces",
-          "file": "wordsearch.py",
-          "func_name": "read_word_list",
+          "description": "load_word_scores - empty file returns empty dict",
+          "file": "cipher_cracker.py",
+          "func_name": "load_word_scores",
           "setup_files": {
-            "test_words_space.txt": "  cat  \n\n  dog \n"
+            "words_empty.txt": ""
           },
-          "inputs": ["test_words_space.txt"],
-          "expected": ["cat", "dog"],
+          "inputs": ["words_empty.txt"],
+          "expected": {},
           "output_method": "return"
         },
         {
-          "description": "read_matrix - standard comma-separated matrix",
-          "file": "wordsearch.py",
-          "func_name": "read_matrix",
+          "description": "load_keys - standard file and skips blank lines",
+          "file": "cipher_cracker.py",
+          "func_name": "load_keys",
           "setup_files": {
-            "test_matrix.txt": "a,b,c\nd,e,f\ng,h,i\n"
+            "keys_std.txt": "apple\n\norange\n   \nlemon\nbanana\n"
           },
-          "inputs": ["test_matrix.txt"],
-          "expected": [["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"]],
+          "inputs": ["keys_std.txt"],
+          "expected": ["apple", "orange", "lemon", "banana"],
           "output_method": "return"
         },
         {
-          "description": "find_words - horizontal right ('r') search",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["cat", "dog"],
-            [["c", "a", "t"], ["d", "o", "g"]],
-            "r"
-          ],
-          "expected": [["cat", 1], ["dog", 1]],
-          "sort_tuples_result": true,
-          "output_method": "return"
-        },
-        {
-          "description": "find_words - all 8 directions (u, d, r, l, w, x, y, z)",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["cat", "tac", "god"],
-            [["c", "a", "t"], ["o", "o", "a"], ["g", "d", "c"]],
-            "udrlwxyz"
-          ],
-          "expected": [["cat", 2], ["tac", 2], ["god", 1]],
-          "sort_tuples_result": true,
-          "output_method": "return"
-        },
-        {
-          "description": "find_words - edge case: duplicate directions string ('rrud')",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["cat"],
-            [["c", "a", "t"]],
-            "rrud"
-          ],
-          "expected": [["cat", 1]],
-          "sort_tuples_result": true,
-          "output_method": "return"
-        },
-        {
-          "description": "find_words - edge case: overlapping and palindrome words",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["mom", "ana"],
-            [["m", "o", "m"], ["a", "n", "a"]],
-            "rl"
-          ],
-          "expected": [["mom", 2], ["ana", 2]],
-          "sort_tuples_result": true,
-          "output_method": "return"
-        },
-        {
-          "description": "find_words - edge case: word not in matrix",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["zebra"],
-            [["a", "b"], ["c", "d"]],
-            "udrl"
-          ],
+          "description": "load_keys - empty or whitespace-only file returns empty list",
+          "file": "cipher_cracker.py",
+          "func_name": "load_keys",
+          "setup_files": {
+            "keys_empty.txt": "\n   \n\n"
+          },
+          "inputs": ["keys_empty.txt"],
           "expected": [],
           "output_method": "return"
         },
         {
-          "description": "find_words - edge case: empty word list",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            [],
-            [["a", "b"], ["c", "d"]],
-            "r"
-          ],
-          "expected": [],
+          "description": "decrypt_vigenere - single word",
+          "file": "cipher_cracker.py",
+          "func_name": "decrypt_vigenere",
+          "inputs": ["lxfopv", "lemon"],
+          "expected": "attack",
           "output_method": "return"
         },
         {
-          "description": "find_words - edge case: 1x1 matrix and single-letter word",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["a"],
-            [["a"]],
-            "r"
-          ],
-          "expected": [["a", 1]],
+          "description": "decrypt_vigenere - multi-word restarts key and preserves spaces",
+          "file": "cipher_cracker.py",
+          "func_name": "decrypt_vigenere",
+          "inputs": ["lxfopv lx oeib", "lemon"],
+          "expected": "attack at dawn",
           "output_method": "return"
         },
         {
-          "description": "write_output - creates file with word counts format",
-          "file": "wordsearch.py",
-          "func_name": "write_output",
+          "description": "decrypt_vigenere - identity key 'a'",
+          "file": "cipher_cracker.py",
+          "func_name": "decrypt_vigenere",
+          "inputs": ["hello world", "a"],
+          "expected": "hello world",
+          "output_method": "return"
+        },
+        {
+          "description": "score_text - standard scoring",
+          "file": "cipher_cracker.py",
+          "func_name": "score_text",
           "inputs": [
-            [["cat", 1], ["dog", 3]],
-            "test_out.txt"
+            "attack at dawn",
+            {"attack": 10, "at": 1, "dawn": 6}
+          ],
+          "expected": 17,
+          "output_method": "return"
+        },
+        {
+          "description": "score_text - repeated words counted multiple times",
+          "file": "cipher_cracker.py",
+          "func_name": "score_text",
+          "inputs": [
+            "attack attack at dawn",
+            {"attack": 10, "at": 1, "dawn": 6}
+          ],
+          "expected": 27,
+          "output_method": "return"
+        },
+        {
+          "description": "score_text - no matching words returns 0",
+          "file": "cipher_cracker.py",
+          "func_name": "score_text",
+          "inputs": [
+            "unknown words only",
+            {"attack": 10, "dawn": 6}
+          ],
+          "expected": 0,
+          "output_method": "return"
+        },
+        {
+          "description": "crack_cipher - finds highest scoring candidate",
+          "file": "cipher_cracker.py",
+          "func_name": "crack_cipher",
+          "inputs": [
+            "lxfopv lx oeib",
+            ["apple", "orange", "lemon", "banana"],
+            {"attack": 10, "at": 1, "dawn": 6}
+          ],
+          "expected": ["lemon", 17, "attack at dawn"],
+          "expected_type": "tuple",
+          "output_method": "return"
+        },
+        {
+          "description": "crack_cipher - tie-breaking picks first key in list",
+          "file": "cipher_cracker.py",
+          "func_name": "crack_cipher",
+          "inputs": [
+            "lxfopv",
+            ["firstkey", "secondkey"],
+            {}
+          ],
+          "expected": ["firstkey", 0, "gpxnbe"],
+          "expected_type": "tuple",
+          "output_method": "return"
+        },
+        {
+          "description": "write_report - writes exact key/score/text format",
+          "file": "cipher_cracker.py",
+          "func_name": "write_report",
+          "inputs": [
+            ["lemon", 17, "attack at dawn"],
+            "test_report.txt"
           ],
           "expected_file_content": {
-            "filename": "test_out.txt",
-            "content": "cat,1\ndog,3"
+            "filename": "test_report.txt",
+            "content": "key:lemon\nscore:17\ntext:attack at dawn\n",
+            "exact_match": true
           },
           "output_method": "return"
         },
         {
-          "description": "check_input_args - valid CLI arguments",
-          "file": "wordsearch.py",
-          "func_name": "check_input_args",
+          "description": "CLI - wrong number of arguments exits with code 1 and Usage message",
+          "file": "cipher_cracker.py",
+          "run_as_main": true,
+          "mock_argv": ["cipher_cracker.py", "enc.txt", "keys.txt"],
+          "expected_exit_code": 1,
+          "expected": "Usage: cipher_cracker.py encrypted_file keys_file words_file output_file num_keys"
+        },
+        {
+          "description": "CLI - missing input file exits with code 1 and exact Error message",
+          "file": "cipher_cracker.py",
+          "run_as_main": true,
+          "mock_argv": ["cipher_cracker.py", "missing_secret.txt", "keys_std.txt", "words_std.txt", "out_err.txt", "5"],
+          "expected_exit_code": 1,
+          "expected": "Error: cannot open file missing_secret.txt"
+        },
+        {
+          "description": "CLI - end-to-end execution respects num_keys and writes report silently",
+          "file": "cipher_cracker.py",
+          "run_as_main": true,
           "setup_files": {
-            "w.txt": "cat",
-            "m.txt": "c,a,t"
+            "cli_enc.txt": "lxfopv lx oeib\n",
+            "cli_keys.txt": "apple\norange\nlemon\nbanana\n",
+            "cli_words.txt": "attack,10\nat,1\ndawn,6\n"
           },
-          "inputs": [
-            ["wordsearch.py", "w.txt", "m.txt", "out.txt", "udrl"]
-          ],
-          "expected": null,
-          "output_method": "return"
-        },
-        {
-          "description": "check_input_args - invalid direction string",
-          "file": "wordsearch.py",
-          "func_name": "check_input_args",
-          "setup_files": {
-            "w.txt": "cat",
-            "m.txt": "c,a,t"
-          },
-          "inputs": [
-            ["wordsearch.py", "w.txt", "m.txt", "out.txt", "udrK"]
-          ],
-          "expected": "Invalid direction indicator: K",
-          "output_method": "return"
-        },
-        {
-          "description": "check_input_args - invalid number of arguments",
-          "file": "wordsearch.py",
-          "func_name": "check_input_args",
-          "inputs": [
-            ["wordsearch.py", "w.txt", "m.txt"]
-          ],
-          "expected": "Wrong number of arguments provided.",
-          "output_method": "return"
-        },
-        {
-          "description": "check_input_args - non-existent file",
-          "file": "wordsearch.py",
-          "func_name": "check_input_args",
-          "inputs": [
-            ["wordsearch.py", "non_existent.txt", "non_existent_matrix.txt", "out.txt", "udrl"]
-          ],
-          "expected": "File non_existent.txt does not exist.",
-          "output_method": "return"
-        },
-        {
-          "description": "read_matrix - edge case: empty file should return empty list",
-          "file": "wordsearch.py",
-          "func_name": "read_matrix",
-          "setup_files": {
-            "empty_matrix.txt": ""
-          },
-          "inputs": ["empty_matrix.txt"],
-          "expected": [],
-          "output_method": "return"
-        },
-        {
-          "description": "find_words - edge case: empty matrix (should not crash)",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["cat", "dog"],
-            [],
-            "udrlwxyz"
-          ],
-          "expected": [],
-          "output_method": "return"
-        },
-        {
-          "description": "find_words - edge case: word is longer than the entire matrix dimensions",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["hello"],
-            [["h", "e"], ["l", "l"]],
-            "udrl"
-          ],
-          "expected": [],
-          "output_method": "return"
-        },
-        {
-          "description": "find_words - edge case: overlapping occurrences of the SAME word in the SAME direction",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["aba"],
-            [["a", "b", "a", "b", "a"]],
-            "r"
-          ],
-          "expected": [["aba", 2]],
-          "sort_tuples_result": true,
-          "output_method": "return"
-        },
-        {
-          "description": "find_words - edge case: target word characters do not exist in matrix at all",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["xyz"],
-            [["a", "b", "c"], ["d", "e", "f"]],
-            "udrlwxyz"
-          ],
-          "expected": [],
-          "output_method": "return"
-        },
-        {
-          "description": "write_output - edge case: empty results list should create an empty file (not crash or write null)",
-          "file": "wordsearch.py",
-          "func_name": "write_output",
-          "inputs": [
-            [],
-            "empty_out.txt"
-          ],
+          "mock_argv": ["cipher_cracker.py", "cli_enc.txt", "cli_keys.txt", "cli_words.txt", "cli_out.txt", "3"],
+          "expected_exit_code": 0,
+          "expected": "",
           "expected_file_content": {
-            "filename": "empty_out.txt",
-            "content": ""
-          },
-          "output_method": "return"
-        },
-        {
-          "description": "check_input_args - edge case: word file exists, but matrix file does not",
-          "file": "wordsearch.py",
-          "func_name": "check_input_args",
-          "setup_files": {
-            "w.txt": "cat"
-          },
-          "inputs": [
-            ["wordsearch.py", "w.txt", "missing_matrix.txt", "out.txt", "udrl"]
-          ],
-          "expected": "File missing_matrix.txt does not exist.",
-          "output_method": "return"
-        },
-        {
-          "description": "find_words - edge case: finding single letter multiple times across matrix",
-          "file": "wordsearch.py",
-          "func_name": "find_words",
-          "inputs": [
-            ["a"],
-            [["a", "b", "a"], ["c", "a", "d"]],
-            "u"
-          ],
-          "expected": [["a", 3]],
-          "output_method": "return"
+            "filename": "cli_out.txt",
+            "content": "key:lemon\nscore:17\ntext:attack at dawn\n",
+            "exact_match": true
+          }
         }
       ]
-    }    
+    }   
   }
 }
