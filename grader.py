@@ -281,34 +281,44 @@ def run_dynamic_tests(temp_dir, tests, pytest_files=None):
 
                 # הרצה כסקריפט ראשי (__main__) עבור בדיקות CLI וקודי יציאה
                 if test.get('run_as_main'):
-                    sys.argv = test.get('mock_argv', [test['file']])
+                    from contextlib import redirect_stderr
+                    sys.argv = list(test.get('mock_argv', [test['file']]))
                     exit_code = 0
                     f_out = io.StringIO()
+                    f_err = io.StringIO()
                     try:
-                        with redirect_stdout(f_out):
+                        with redirect_stdout(f_out), redirect_stderr(f_err):
                             runpy.run_path(test['file'], run_name='__main__')
                     except SystemExit as se:
-                        exit_code = se.code if isinstance(se.code, int) else (1 if se.code else 0)
+                        if se.code is None:
+                            exit_code = 0
+                        elif isinstance(se.code, int):
+                            exit_code = se.code
+                        else:
+                            # אם הועברה מחרוזת ל-sys.exit("Error..."), פייתון מדפיס אותה ל-stderr ויוצא עם קוד 1
+                            f_err.write(str(se.code))
+                            exit_code = 1
                     finally:
                         sys.argv = old_argv[:]
 
-                    stdout_output = f_out.getvalue().strip()
+                    # איחוד פלט רגיל ופלט שגיאות (למקרה שסטודנט הדפיס ל-stderr)
+                    combined_output = (f_out.getvalue() + "\n" + f_err.getvalue()).strip()
                     expected_code = test.get('expected_exit_code', 0)
+
                     if exit_code != expected_code:
                         results['failed'] += 1
                         results['details'].append(
-                            f"[X] {test['description']} - Failed. Expected exit code {expected_code}, got {exit_code}. Output: {stdout_output}"
+                            f"[X] {test['description']} - Failed. Expected exit code {expected_code}, got {exit_code}. Output: {combined_output}"
                         )
                         continue
 
-                    if 'expected' in test and stdout_output != str(test['expected']).strip():
+                    if 'expected' in test and combined_output != str(test['expected']).strip():
                         results['failed'] += 1
                         results['details'].append(
-                            f"[X] {test['description']} - Failed. Expected stdout '{test['expected']}', got '{stdout_output}'"
+                            f"[X] {test['description']} - Failed. Expected output '{test['expected']}', got '{combined_output}'"
                         )
                         continue
 
-                    # 2. תמיכה בהשוואה מדויקת (כולל \n בסוף קובץ) ב-expected_file_content
                     if 'expected_file_content' in test:
                         out_file = test['expected_file_content']['filename']
                         exact = test['expected_file_content'].get('exact_match', False)
@@ -323,15 +333,16 @@ def run_dynamic_tests(temp_dir, tests, pytest_files=None):
                         with open(out_file, 'r', encoding='utf-8') as rf:
                             raw_actual = rf.read()
                             actual_text = raw_actual if exact else raw_actual.strip()
-                        if actual_text == expected_text:
-                            results['passed'] += 1
-                            results['details'].append(f"[V] {test['description']} - Passed")
-                        else:
+                        if actual_text != expected_text:
                             results['failed'] += 1
                             results['details'].append(
                                 f"[X] {test['description']} - Failed. File content mismatch. Expected:\n{repr(expected_text)}\nGot:\n{repr(actual_text)}"
                             )
-                        continue
+                            continue
+
+                    results['passed'] += 1
+                    results['details'].append(f"[V] {test['description']} - Passed")
+                    continue
 
                 mod = _load_clean_module(test['file'].replace('.py', ''))
                 func = getattr(mod, test['func_name'])

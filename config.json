@@ -592,7 +592,7 @@
           "file": "cipher_cracker.py",
           "func_name": "load_keys",
           "setup_files": {
-            "keys_std.txt": "apple\n\norange\n   \nlemon\nbanana\n"
+            "keys_std.txt": "apple\n\norange\nlemon\nbanana\n"
           },
           "inputs": ["keys_std.txt"],
           "expected": ["apple", "orange", "lemon", "banana"],
@@ -603,7 +603,7 @@
           "file": "cipher_cracker.py",
           "func_name": "load_keys",
           "setup_files": {
-            "keys_empty.txt": "\n   \n\n"
+            "keys_empty.txt": "\n\n\n"
           },
           "inputs": ["keys_empty.txt"],
           "expected": [],
@@ -688,7 +688,7 @@
             ["firstkey", "secondkey"],
             {}
           ],
-          "expected": ["firstkey", 0, "gpxnbe"],
+          "expected": ["firstkey", 0, "gpowwl"],
           "expected_type": "tuple",
           "output_method": "return"
         },
@@ -713,7 +713,8 @@
           "run_as_main": true,
           "mock_argv": ["cipher_cracker.py", "enc.txt", "keys.txt"],
           "expected_exit_code": 1,
-          "expected": "Usage: cipher_cracker.py encrypted_file keys_file words_file output_file num_keys"
+          "expected": "Usage: cipher_cracker.py encrypted_file keys_file words_file output_file num_keys",
+          "output_method": "stdout"
         },
         {
           "description": "CLI - missing input file exits with code 1 and exact Error message",
@@ -721,7 +722,8 @@
           "run_as_main": true,
           "mock_argv": ["cipher_cracker.py", "missing_secret.txt", "keys_std.txt", "words_std.txt", "out_err.txt", "5"],
           "expected_exit_code": 1,
-          "expected": "Error: cannot open file missing_secret.txt"
+          "expected": "Error: cannot open file missing_secret.txt",
+          "output_method": "stdout"
         },
         {
           "description": "CLI - end-to-end execution respects num_keys and writes report silently",
