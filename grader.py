@@ -146,6 +146,40 @@ def _get_function_code_length(func_node):
     return total_lines
 
 
+def _check_blank_lines_between_functions(tree, lines, filename):
+    """בדיקת PEP 8: שתי שורות ריקות לפני כל הגדרת פונקציה ברמה הראשית (למעט הראשונה)."""
+    errors = []
+    for idx, node in enumerate(tree.body):
+        if idx == 0 or not isinstance(node, ast.FunctionDef):
+            continue
+
+        # אם יש דקורטור מעל הפונקציה, שורת ההתחלה היא של הדקורטור הראשון
+        start_line = node.lineno
+        if getattr(node, 'decorator_list', None):
+            start_line = min(d.lineno for d in node.decorator_list)
+
+        # עלייה כלפי מעלה (אינדקס 0-based)
+        curr_idx = start_line - 2
+
+        # דילוג על הערות שצמודות ישירות מעל הפונקציה
+        while curr_idx >= 0 and lines[curr_idx].strip().startswith('#'):
+            curr_idx -= 1
+
+        # ספירת שורות ריקות רצופות
+        blank_count = 0
+        while curr_idx >= 0 and lines[curr_idx].strip() == '':
+            blank_count += 1
+            curr_idx -= 1
+
+        # בדיקה רק אם אכן יש קוד/תוכן מעל הפונקציה בקובץ
+        if curr_idx >= 0 and blank_count != 2:
+            errors.append(
+                f"{filename}:{start_line}: Expected 2 blank lines before function '{node.name}', found {blank_count}."
+            )
+
+    return errors
+
+
 def analyze_code(code_content, filename, ast_rules_config):
     errors = {"docstring": [], "convention": [], "rule_violations": []}
 
@@ -166,6 +200,13 @@ def analyze_code(code_content, filename, ast_rules_config):
     found_calls = set()
     builtins_set = set(dir(__builtins__))
     lines = code_content.splitlines()
+
+    found_calls = set()
+    builtins_set = set(dir(__builtins__))
+    lines = code_content.splitlines()
+
+    # בדיקת שתי שורות ריקות בין פונקציות ברמה הראשית
+    errors["convention"].extend(_check_blank_lines_between_functions(tree, lines, filename))
 
     for node in ast.walk(tree):
         line_suffix = f":{getattr(node, 'lineno')}" if hasattr(node, 'lineno') else ""
