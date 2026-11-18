@@ -56,21 +56,22 @@ def safe_extract_zip(zip_path, dest_dir):
 
 
 def check_raw_text_style(code_content, filename):
-    """בדיקות סגנון מבוססות tokenize (ללא אזעקות שווא על Docstrings וללא ReDoS)."""
-    errors = []
+    """הפרדה בין חריגות סגנון מחייבות בקורס (79 תווים, Tabs) לבין המלצות PEP 8."""
+    mandatory_errors = []
+    style_recommendations = []
     lines = code_content.splitlines()
 
     for i, line in enumerate(lines):
         line_num = i + 1
         if len(line) > 79:
-            errors.append(f"{filename}:{line_num}: line exceeds 79 characters ({len(line)} chars)")
+            mandatory_errors.append(f"{filename}:{line_num}: line exceeds 79 characters ({len(line)} chars)")
         if '\t' in line:
-            errors.append(f"{filename}:{line_num}: Tabs are not allowed. Use 4 spaces for indentation.")
+            mandatory_errors.append(f"{filename}:{line_num}: Tabs are not allowed. Use 4 spaces for indentation.")
 
     try:
         tokens = list(tokenize.generate_tokens(io.StringIO(code_content).readline))
     except tokenize.TokenError:
-        return errors
+        return mandatory_errors, style_recommendations
 
     spaced_ops = {'==', '!=', '<=', '>=', '+=', '-=', '*=', '/='}
     in_def_header = False
@@ -83,7 +84,7 @@ def check_raw_text_style(code_content, filename):
 
         if tok.type == tokenize.COMMENT:
             if re.match(r'^#[^\s!]', tok.string):
-                errors.append(f"{filename}:{line_num}: Missing space after '#' in comment.")
+                style_recommendations.append(f"{filename}:{line_num}: Missing space after '#' in comment.")
 
         elif tok.type == tokenize.NAME and tok.string == 'def':
             in_def_header = True
@@ -101,7 +102,9 @@ def check_raw_text_style(code_content, filename):
                     space_before = (prev_tok.end[0] == tok.start[0] and prev_tok.end[1] < tok.start[1])
                     space_after = (next_tok.start[0] == tok.end[0] and tok.end[1] < next_tok.start[1])
                     if space_before or space_after:
-                        errors.append(f"{filename}:{line_num}: Do not use spaces around '=' for default function arguments.")
+                        style_recommendations.append(
+                            f"{filename}:{line_num}: Do not use spaces around '=' for default function arguments."
+                        )
 
             if tok.string == ',' and next_tok:
                 if (
@@ -110,7 +113,7 @@ def check_raw_text_style(code_content, filename):
                     and next_tok.type not in (tokenize.NL, tokenize.NEWLINE, tokenize.ENDMARKER, tokenize.COMMENT)
                     and next_tok.string not in (')', ']', '}')
                 ):
-                    errors.append(f"{filename}:{line_num}: Missing space after comma.")
+                    style_recommendations.append(f"{filename}:{line_num}: Missing space after comma.")
 
             elif tok.string in spaced_ops and prev_tok and next_tok:
                 missing_before = (
@@ -124,9 +127,11 @@ def check_raw_text_style(code_content, filename):
                     and next_tok.type not in (tokenize.NL, tokenize.NEWLINE, tokenize.ENDMARKER)
                 )
                 if missing_before or missing_after:
-                    errors.append(f"{filename}:{line_num}: Missing spaces around operator '{tok.string}'.")
+                    style_recommendations.append(
+                        f"{filename}:{line_num}: Missing spaces around operator '{tok.string}'."
+                    )
 
-    return errors
+    return mandatory_errors, style_recommendations
 
 
 def _get_function_code_length(func_node):
@@ -181,10 +186,16 @@ def _check_blank_lines_between_functions(tree, lines, filename):
 
 
 def analyze_code(code_content, filename, ast_rules_config):
-    errors = {"docstring": [], "convention": [], "rule_violations": []}
+    errors = {
+        "rule_violations": [],
+        "docstring": [],
+        "convention": [],
+        "recommendations": []
+    }
 
-    raw_errors = check_raw_text_style(code_content, filename)
-    errors["convention"].extend(raw_errors)
+    mandatory_raw, style_recs = check_raw_text_style(code_content, filename)
+    errors["convention"].extend(mandatory_raw)
+    errors["recommendations"].extend(style_recs)
 
     try:
         tree = ast.parse(code_content)
@@ -196,17 +207,15 @@ def analyze_code(code_content, filename, ast_rules_config):
     allowed_imports = file_rules.get("allowed_imports", [])
     required_calls = file_rules.get("required_calls", [])
     forbidden_nodes = file_rules.get("forbidden_nodes", [])
+    extra_allowed_nums = set(file_rules.get("allowed_magic_numbers", []))
+    allowed_numbers = {-1, 0, 1, 2, 6, 26} | extra_allowed_nums
 
     found_calls = set()
     builtins_set = set(dir(__builtins__))
     lines = code_content.splitlines()
 
-    found_calls = set()
-    builtins_set = set(dir(__builtins__))
-    lines = code_content.splitlines()
-
-    # בדיקת שתי שורות ריקות בין פונקציות ברמה הראשית
-    errors["convention"].extend(_check_blank_lines_between_functions(tree, lines, filename))
+    # בדיקת שתי שורות ריקות בין פונקציות ברמה הראשית (המלצת PEP 8)
+    errors["recommendations"].extend(_check_blank_lines_between_functions(tree, lines, filename))
 
     for node in ast.walk(tree):
         line_suffix = f":{getattr(node, 'lineno')}" if hasattr(node, 'lineno') else ""
@@ -239,11 +248,13 @@ def analyze_code(code_content, filename, ast_rules_config):
 
         elif isinstance(node, ast.Constant):
             if isinstance(node.value, (int, float)) and not isinstance(node.value, bool):
-                if node.value not in (-1, 0, 1, 2, 6, 26):
+                if node.value not in allowed_numbers:
                     if hasattr(node, 'lineno'):
                         line_str = lines[getattr(node, 'lineno') - 1]
                         if not re.match(r'^\s*[A-Z_][A-Z0-9_]*\s*=', line_str):
-                            errors["convention"].append(f"{filename}{line_suffix}: Magic number '{node.value}' used. Consider assigning it to a named CONSTANT.")
+                            errors["convention"].append(
+                                f"{filename}{line_suffix}: Magic number '{node.value}' used. Consider assigning it to a named CONSTANT."
+                            )
 
         elif type(node).__name__ in forbidden_nodes:
             errors["rule_violations"].append(f"{filename}{line_suffix}: Forbidden syntax used: {type(node).__name__}")
@@ -287,6 +298,19 @@ def _load_clean_module(module_name):
     return __import__(module_name)
 
 
+def _load_png_as_nested_list(img_path):
+    """טעינת תמונת PNG לרשימה מקוננת (2D עבור גווני אפור, 3D עבור RGB) בעזרת PIL."""
+    from PIL import Image  # type: ignore[import-not-found]
+    with Image.open(img_path) as im:
+        width, height = im.size
+        if im.mode == "L":
+            raw = list(im.getdata())
+            return [raw[r * width:(r + 1) * width] for r in range(height)]
+        rgb_im = im.convert("RGB")
+        raw = [list(px) for px in rgb_im.getdata()]
+        return [raw[r * width:(r + 1) * width] for r in range(height)]
+
+
 def run_dynamic_tests(temp_dir, tests, pytest_files=None):
     """הרצה ישירה ומבודדת של הטסטים הדינמיים ללא שימוש ב-exec חיצוני."""
     pytest_files = pytest_files or []
@@ -300,6 +324,10 @@ def run_dynamic_tests(temp_dir, tests, pytest_files=None):
         import karel
     except ImportError:
         karel = None
+
+    # העתקת תיקיית images (אם קיימת) לפני המעבר ל-temp_dir
+    if os.path.isdir("images"):
+        shutil.copytree("images", os.path.join(temp_dir, "images"), dirs_exist_ok=True)
 
     old_cwd = os.getcwd()
     old_argv = sys.argv[:]
@@ -336,13 +364,11 @@ def run_dynamic_tests(temp_dir, tests, pytest_files=None):
                         elif isinstance(se.code, int):
                             exit_code = se.code
                         else:
-                            # אם הועברה מחרוזת ל-sys.exit("Error..."), פייתון מדפיס אותה ל-stderr ויוצא עם קוד 1
                             f_err.write(str(se.code))
                             exit_code = 1
                     finally:
                         sys.argv = old_argv[:]
 
-                    # איחוד פלט רגיל ופלט שגיאות (למקרה שסטודנט הדפיס ל-stderr)
                     combined_output = (f_out.getvalue() + "\n" + f_err.getvalue()).strip()
                     expected_code = test.get('expected_exit_code', 0)
 
@@ -385,12 +411,61 @@ def run_dynamic_tests(temp_dir, tests, pytest_files=None):
                     results['details'].append(f"[V] {test['description']} - Passed")
                     continue
 
+                # בדיקת השוואת תמונות רשמיות (PNG) עבור תרגיל 6
+                if test.get('image_compare'):
+                    try:
+                        import PIL  # type: ignore[import-not-found]
+                    except ImportError:
+                        results['details'].append(
+                            f"[!] Skipped {test['description']}: Pillow (PIL) is not installed."
+                        )
+                        continue
+
+                    src_path = test['source_image']
+                    exp_path = test['expected_image']
+                    if not (os.path.exists(src_path) and os.path.exists(exp_path)):
+                        results['details'].append(
+                            f"[!] Skipped {test['description']}: Reference PNG files not found."
+                        )
+                        continue
+
+                    src_img = _load_png_as_nested_list(src_path)
+                    expected_img = _load_png_as_nested_list(exp_path)
+
+                    mod = _load_clean_module(test['file'].replace('.py', ''))
+                    func = getattr(mod, test['func_name'])
+                    extra_args = copy.deepcopy(test.get('extra_args', []))
+
+                    actual_img = func(src_img, *extra_args)
+
+                    if 'channel_index' in test:
+                        actual_img = actual_img[test['channel_index']]
+
+                    if actual_img == expected_img:
+                        results['passed'] += 1
+                        results['details'].append(f"[V] {test['description']} - Passed")
+                    else:
+                        results['failed'] += 1
+                        results['details'].append(
+                            f"[X] {test['description']} - Failed. Output image pixels do not match '{exp_path}'."
+                        )
+                    continue
+
                 mod = _load_clean_module(test['file'].replace('.py', ''))
                 func = getattr(mod, test['func_name'])
                 args_list = copy.deepcopy(test.get('inputs', []))
 
+                # אתחול עולם Karel לפני הפעלת הפונקציה (עם מיפוי מפתחות col/row/dir -> robot_*)
                 if test.get('output_method') == 'karel_state' and karel is not None:
-                    karel.new_world(**test['setup_karel'])
+                    sk = test['setup_karel']
+                    karel.new_world(
+                        cols=sk.get('cols', 10),
+                        rows=sk.get('rows', 10),
+                        robot_col=sk.get('robot_col', sk.get('col', 1)),
+                        robot_row=sk.get('robot_row', sk.get('row', 1)),
+                        robot_dir=sk.get('robot_dir', sk.get('dir', 'E')),
+                        bag=sk.get('bag', -1),
+                    )
 
                 if 'mock_argv' in test:
                     sys.argv = test['mock_argv']
@@ -419,7 +494,9 @@ def run_dynamic_tests(temp_dir, tests, pytest_files=None):
 
                 if 'expected_file_content' in test:
                     out_file = test['expected_file_content']['filename']
-                    expected_text = test['expected_file_content']['content'].strip()
+                    exact = test['expected_file_content'].get('exact_match', False)
+                    raw_expected = test['expected_file_content']['content']
+                    expected_text = raw_expected if exact else raw_expected.strip()
                     if not os.path.exists(out_file):
                         results['failed'] += 1
                         results['details'].append(
@@ -427,28 +504,28 @@ def run_dynamic_tests(temp_dir, tests, pytest_files=None):
                         )
                         continue
                     with open(out_file, 'r', encoding='utf-8') as rf:
-                        actual_text = rf.read().strip()
+                        raw_actual = rf.read()
+                        actual_text = raw_actual if exact else raw_actual.strip()
                     if actual_text == expected_text:
                         results['passed'] += 1
                         results['details'].append(f"[V] {test['description']} - Passed")
                     else:
                         results['failed'] += 1
                         results['details'].append(
-                            f"[X] {test['description']} - Failed. File content mismatch. Expected:\n{expected_text}\nGot:\n{actual_text}"
+                            f"[X] {test['description']} - Failed. File content mismatch. Expected:\n{repr(expected_text)}\nGot:\n{repr(actual_text)}"
                         )
                     continue
 
-                # 1. תיקון מיפוי פרמטרים עבור karel.new_world
                 if test.get('output_method') == 'karel_state' and karel is not None:
-                    sk = test['setup_karel']
-                    karel.new_world(
-                        cols=sk.get('cols', 10),
-                        rows=sk.get('rows', 10),
-                        robot_col=sk.get('robot_col', sk.get('col', 1)),
-                        robot_row=sk.get('robot_row', sk.get('row', 1)),
-                        robot_dir=sk.get('robot_dir', sk.get('dir', 'E')),
-                        bag=sk.get('bag', -1),
-                    )
+                    expected_karel = test['expected_beepers']
+                    actual_karel = {str(k): v for k, v in karel._w.beepers.items()}
+                    if expected_karel == actual_karel:
+                        results['passed'] += 1
+                        results['details'].append(f"[V] {test['description']} - Passed")
+                    else:
+                        results['failed'] += 1
+                        results['details'].append(f"[X] {test['description']} - Failed. Karel state mismatch.")
+                    continue
 
                 if 'expected_mutation' in test:
                     idx = test['mutated_arg_index']
@@ -521,6 +598,7 @@ def run_dynamic_tests(temp_dir, tests, pytest_files=None):
 
     return results
 
+
 def validate_non_code_file(file_path, filename):
     """אימות שקובצי חובה אינם ריקים ותואמים לפורמט המצופה."""
     if os.path.getsize(file_path) == 0:
@@ -555,7 +633,9 @@ def process_submission(exercise_id, zip_path, config_data, display_name=None):
         else:
             print("[!] Warning: karel.py not found in the current directory. Karel tests may fail.")
 
-    all_static_errors = []
+    all_mandatory_errors = []
+    all_style_recommendations = []
+    is_strict_style_ex = exercise_id not in ("ex1", "ex2", "ex3", "ex4")
     test_results = None
 
     try:
@@ -569,18 +649,18 @@ def process_submission(exercise_id, zip_path, config_data, display_name=None):
         expected_non_code_files = ex_config.get("expected_non_code_files", [])
         all_expected = set(expected_code_files) | set(expected_non_code_files)
 
-        # בדיקת קבצים לא-קוד נדרשים (למשל README.txt, runtime_report.png, test_cipher_cracker.py)
+        # בדיקת קבצים לא-קוד נדרשים
         for req_non_code in expected_non_code_files:
             non_code_path = os.path.join(temp_dir, req_non_code)
             if not os.path.exists(non_code_path):
                 msg = f"Missing required submission file: {req_non_code}"
                 print(f"[X] {msg}")
-                all_static_errors.append(msg)
+                all_mandatory_errors.append(msg)
             else:
                 val_err = validate_non_code_file(non_code_path, req_non_code)
                 if val_err:
                     print(f"[X] {val_err}")
-                    all_static_errors.append(val_err)
+                    all_mandatory_errors.append(val_err)
 
         # בדיקת קבצים עודפים או תיקיות מקוננות ב-ZIP
         if ex_config.get("strict_zip_contents", False):
@@ -594,14 +674,14 @@ def process_submission(exercise_id, zip_path, config_data, display_name=None):
                     else:
                         msg = f"Unexpected extra file in zip: {rel_f}"
                     print(f"[X] {msg}")
-                    all_static_errors.append(msg)
+                    all_mandatory_errors.append(msg)
 
         for expected_file in expected_code_files:
             file_path = os.path.join(temp_dir, expected_file)
             if not os.path.exists(file_path):
                 missing_msg = f"Missing required file: {expected_file}"
                 print(f"\n[X] {missing_msg}")
-                all_static_errors.append(missing_msg)
+                all_mandatory_errors.append(missing_msg)
                 continue
 
             print(f"\n--- Static Analysis: {expected_file} ---")
@@ -614,8 +694,13 @@ def process_submission(exercise_id, zip_path, config_data, display_name=None):
             for cat, errs in analysis.items():
                 for err in errs:
                     print(f"  [-] {cat.capitalize()}: {err}")
-                    all_static_errors.append(err)
                     has_issues = True
+                    if cat == "recommendations":
+                        all_style_recommendations.append(err)
+                    elif cat in ("docstring", "convention") and not is_strict_style_ex:
+                        all_style_recommendations.append(err)
+                    else:
+                        all_mandatory_errors.append(err)
 
             if not has_issues:
                 print("  [V] Code looks clean (Docstrings, Conventions, Rules).")
@@ -631,14 +716,20 @@ def process_submission(exercise_id, zip_path, config_data, display_name=None):
 
     print(f"\n{'='*60}\nFINAL SUMMARY FOR: {zip_name}\n{'='*60}")
 
-    print("\n--- STATIC ANALYSIS & RULES ---")
-    if not all_static_errors:
-        print("[V] All rule checks and conventions passed perfectly.")
+    print("\n--- MANDATORY CHECKS (WILL DEDUCT POINTS) ---")
+    if not all_mandatory_errors:
+        print("[V] All mandatory rules, docstrings, and conventions passed!")
     else:
-        print(f"[X] Found {len(all_static_errors)} rule violations or missing files:")
-        for err in all_static_errors:
+        print(f"[X] Found {len(all_mandatory_errors)} mandatory issue(s):")
+        for err in all_mandatory_errors:
             wrapped_err = textwrap.fill(err, width=90, subsequent_indent="        ")
             print(f"    - {wrapped_err}")
+
+    if all_style_recommendations:
+        print("\n--- STYLE RECOMMENDATIONS (PEP 8 - NON-BLOCKING) ---")
+        for rec in all_style_recommendations:
+            wrapped_rec = textwrap.fill(rec, width=90, subsequent_indent="        ")
+            print(f"    * {wrapped_rec}")
 
     if test_results:
         print("\n--- DYNAMIC TESTS ---")
